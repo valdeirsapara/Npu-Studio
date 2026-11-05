@@ -63,8 +63,15 @@ jobs:
           if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
 
       - name: Build core + app
-        shell: cmd
-        run: build_app.bat
+        shell: pwsh
+        run: |
+          # Keep the full log, and surface error lines as annotations (visible without logs access).
+          cmd /c "$PWD\build_app.bat" 2>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) {
+            Select-String -Path build.log -Pattern 'error|ERRO|falhou|not found|nao encontrado' |
+              Select-Object -First 25 | ForEach-Object { Write-Host "::error::$($_.Line.Trim())" }
+            exit 1
+          }
 
       - name: Version
         id: version
