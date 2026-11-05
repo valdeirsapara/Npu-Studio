@@ -22,7 +22,7 @@ jobs:
     runs-on: windows-2025-vs2026
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Cache OpenVINO GenAI
         id: ov-cache
@@ -38,7 +38,10 @@ jobs:
           $url = "https://storage.openvinotoolkit.org/repositories/openvino_genai/packages/$env:OV_VERSION/windows/$env:OV_ARCHIVE.zip"
           $zip = "$env:RUNNER_TEMP\ov.zip"
           Invoke-WebRequest $url -OutFile $zip
-          $expected = ((Invoke-WebRequest "$url.sha256").Content | ForEach-Object { if ($_ -is [byte[]]) { [Text.Encoding]::ASCII.GetString($_) } else { $_ } }).Trim().Split()[0].ToLower()
+          # Save the checksum to a file: .Content comes back as bytes for this content type.
+          Invoke-WebRequest "$url.sha256" -OutFile "$env:RUNNER_TEMP\ov.sha256"
+          $expected = (Get-Content "$env:RUNNER_TEMP\ov.sha256" -Raw).Trim().Split()[0].ToLower()
+          Write-Host "esperado: $expected"
           $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
           if ($expected -ne $actual) { throw "SHA-256 do OpenVINO nao confere: $actual != $expected" }
           New-Item -ItemType Directory -Force C:\Intel | Out-Null
