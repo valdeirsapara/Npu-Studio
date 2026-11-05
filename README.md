@@ -58,6 +58,39 @@ Telas:
 Barra de título própria (`TitleBar`) com o botão de menu ao lado do ícone e os dispositivos
 detectados; fundo Mica.
 
+## Instalador e releases
+
+```bat
+build_app.bat
+powershell -File scripts\package.ps1 -Version 0.1.0
+```
+
+Gera em `dist\`:
+
+- `NpuStudio-Setup-0.1.0.exe` (~60 MB) — instalador Inno Setup: instala por usuário (sem pedir
+  administrador), atalho no menu Iniciar, desinstalador. Atualiza versões anteriores.
+  Modelos baixados e imagens geradas **não** são apagados ao desinstalar.
+- `NpuStudio-0.1.0-portable.zip` (~100 MB) — a mesma pasta, para rodar sem instalar.
+
+Os dois levam o runtime do Visual C++ junto (roda em PCs sem o VC++ Redistributable).
+Requer Inno Setup local: `winget install JRSoftware.InnoSetup`.
+
+Um exe único não é possível: o OpenVINO carrega os plugins de NPU/GPU como DLLs separadas.
+
+**CI** (`.github/workflows/build.yml`, runner `windows-2025-vs2026`): todo push na `main` e todo
+PR compilam e anexam o instalador como artefato. Para publicar uma versão:
+
+```bat
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+O workflow cria o Release `v0.1.0` com o instalador e o zip. Tags com hífen
+(`v0.2.0-beta1`) viram pré-release.
+
+O instalador não é assinado digitalmente: o Windows SmartScreen mostra um aviso na primeira
+execução ("Mais informações" → "Executar assim mesmo") até haver um certificado de assinatura.
+
 ## CLI e core
 
 Requisitos: VS 2026 (C++), OpenVINO GenAI em `C:\Intel\openvino_genai`.

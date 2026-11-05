@@ -113,10 +113,16 @@
     <Midl Include="ImagePage.idl"><SubType>Code</SubType><DependentUpon>ImagePage.xaml</DependentUpon></Midl>
     <Midl Include="ModelsPage.idl"><SubType>Code</SubType><DependentUpon>ModelsPage.xaml</DependentUpon></Midl>
   </ItemGroup>
-  <!-- Copy the OpenVINO runtime DLLs next to the .exe so the app runs without setupvars. -->
+  <!-- Copy the OpenVINO runtime DLLs next to the .exe so the app runs without setupvars.
+       Skipped: model-format frontends we never load (we only read OpenVINO IR), the C APIs and
+       TBB debug builds. -->
   <Target Name="CopyOpenVinoRuntime" AfterTargets="Build">
+    <PropertyGroup>
+      <OvBin>$(OpenVinoRoot)\runtime\bin\intel64\Release</OvBin>
+    </PropertyGroup>
     <ItemGroup>
-      <OvDll Include="$(OpenVinoRoot)\runtime\bin\intel64\Release\*.dll;$(OpenVinoRoot)\runtime\bin\intel64\Release\*.json;$(OpenVinoRoot)\runtime\3rdparty\tbb\bin\*.dll" Exclude="$(OpenVinoRoot)\runtime\3rdparty\tbb\bin\*_debug.dll" />
+      <OvDll Include="$(OvBin)\*.dll;$(OvBin)\*.json;$(OpenVinoRoot)\runtime\3rdparty\tbb\bin\*.dll"
+             Exclude="$(OpenVinoRoot)\runtime\3rdparty\tbb\bin\*_debug.dll;$(OvBin)\openvino_onnx_frontend.dll;$(OvBin)\openvino_paddle_frontend.dll;$(OvBin)\openvino_pytorch_frontend.dll;$(OvBin)\openvino_tensorflow_frontend.dll;$(OvBin)\openvino_tensorflow_lite_frontend.dll;$(OvBin)\openvino_gguf_frontend.dll;$(OvBin)\openvino_c.dll;$(OvBin)\openvino_genai_c.dll" />
     </ItemGroup>
     <Copy SourceFiles="@(OvDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
   </Target>

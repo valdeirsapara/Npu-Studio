@@ -1,0 +1,97 @@
+name: Build
+
+# - push to main / pull request / manual: build and upload the installer as a workflow artifact
+# - tag v* (e.g. v0.1.0): same, plus a GitHub Release with the installer and the portable zip
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write  # needed to create releases on tags
+
+env:
+  OV_VERSION: "2026.4.1"
+  OV_ARCHIVE: "openvino_genai_windows_2026.4.1.0_x86_64"
+
+jobs:
+  build:
+    # The project uses the VS 2026 (v145) toolset.
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache OpenVINO GenAI
+        id: ov-cache
+        uses: actions/cache@v4
+        with:
+          path: C:\Intel\${{ env.OV_ARCHIVE }}
+          key: openvino-genai-${{ env.OV_ARCHIVE }}
+
+      - name: Download OpenVINO GenAI
+        if: steps.ov-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $url = "https://storage.openvinotoolkit.org/repositories/openvino_genai/packages/$env:OV_VERSION/windows/$env:OV_ARCHIVE.zip"
+          $zip = "$env:RUNNER_TEMP\ov.zip"
+          Invoke-WebRequest $url -OutFile $zip
+          $expected = ((Invoke-WebRequest "$url.sha256").Content | ForEach-Object { if ($_ -is [byte[]]) { [Text.Encoding]::ASCII.GetString($_) } else { $_ } }).Trim().Split()[0].ToLower()
+          $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($expected -ne $actual) { throw "SHA-256 do OpenVINO nao confere: $actual != $expected" }
+          New-Item -ItemType Directory -Force C:\Intel | Out-Null
+          Expand-Archive $zip -DestinationPath C:\Intel
+
+      - name: Link OpenVINO folder
+        shell: pwsh
+        run: New-Item -ItemType Junction -Path C:\Intel\openvino_genai -Target "C:\Intel\$env:OV_ARCHIVE" | Out-Null
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: app/packages
+          key: nuget-${{ hashFiles('app/packages.config') }}
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      - name: Build core + app
+        shell: cmd
+        run: build_app.bat
+
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") { $v = "${{ github.ref_name }}" -replace '^v', '' }
+          else { $v = "0.0.0-ci.${{ github.run_number }}" }
+          "value=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Package (zip + installer)
+        shell: pwsh
+        run: .\scripts\package.ps1 -Version "${{ steps.version.outputs.value }}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: NpuStudio-${{ steps.version.outputs.value }}
+          path: |
+            dist/*.exe
+            dist/*.zip
+          retention-days: 14
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = "${{ steps.version.outputs.value }}"
+          $ghArgs = @("${{ github.ref_name }}", "dist/NpuStudio-Setup-$v.exe", "dist/NpuStudio-$v-portable.zip",
+                      "--title", "NPU Studio ${{ github.ref_name }}", "--generate-notes")
+          if ($v -match '-') { $ghArgs += "--prerelease" }  # e.g. v0.2.0-beta1
+          gh release create @ghArgs
