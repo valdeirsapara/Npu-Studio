@@ -3,6 +3,7 @@
 
 #include "hfstudio/http.hpp"
 #include "hfstudio/hub_client.hpp"
+#include "hfstudio/image_engine.hpp"
 #include "hfstudio/model_manager.hpp"
 #include "hfstudio/text_engine.hpp"
 
@@ -105,7 +106,9 @@ void usage() {
         "  hfstudio download <repo>          baixa (ou continua) um modelo\n"
         "  hfstudio list                     modelos instalados\n"
         "  hfstudio remove <repo>\n"
-        "  hfstudio chat <repo> [--device NPU|GPU|CPU] [--system \"...\"] [--ctx 2048] [--max-new 512]\n\n"
+        "  hfstudio chat <repo> [--device NPU|GPU|CPU] [--system \"...\"] [--ctx 2048] [--max-new 512]\n"
+        "  hfstudio image <repo> \"<prompt>\" [--out img.png] [--size 512x512] [--steps N] [--seed N]\n"
+        "                 [--guidance F] [--negative \"...\"] [--count 1] [--device GPU]\n\n"
         "Opcoes gerais: --models-dir <pasta> (padrao: %LOCALAPPDATA%\\HFStudio\\models)\n"
         "Token do Hugging Face (modelos restritos): variavel de ambiente HF_TOKEN\n";
 }
@@ -226,6 +229,50 @@ int cmd_chat(ModelManager& mm, const Args& a) {
     return 0;
 }
 
+int cmd_image(ModelManager& mm, const Args& a) {
+    if (a.pos.size() < 3) { usage(); return 2; }
+    auto m = mm.find(a.pos[1]);
+    if (!m) { std::cerr << a.pos[1] << " nao esta instalado (use: hfstudio download " << a.pos[1] << ")\n"; return 1; }
+    if (m->kind != ModelKind::Image) { std::cerr << "Esse modelo nao e de imagem.\n"; return 1; }
+
+    ImageOptions o;
+    std::string size = a.get("size", "512x512");
+    auto x = size.find('x');
+    if (x == std::string::npos) { std::cerr << "--size deve ser LARGURAxALTURA, ex.: 512x512\n"; return 2; }
+    o.width = std::stoi(size.substr(0, x));
+    o.height = std::stoi(size.substr(x + 1));
+    o.steps = std::stoul(a.get("steps", "0"));
+    o.seed = std::stoull(a.get("seed", "0"));
+    o.guidance = std::stof(a.get("guidance", "-1"));
+    o.negative_prompt = a.get("negative");
+    int count = std::stoi(a.get("count", "1"));
+    std::string device = a.get("device", "GPU");
+
+    std::cout << "Carregando " << m->repo << " em " << device << "...\n";
+    ImageEngine engine(m->path, device);
+    std::cout << "Pronto em " << std::fixed << std::setprecision(1) << engine.load_seconds() << " s\n";
+
+    for (int i = 0; i < count; ++i) {
+        ImageOptions oi = o;
+        if (o.seed && count > 1) oi.seed = o.seed + i;  // reproducible series
+        auto img = engine.generate(a.pos[2], oi, [](size_t step, size_t total) {
+            std::cout << "\r  passo " << step << "/" << total << "   " << std::flush;
+            return !g_interrupt.load();
+        });
+        fs::path out;
+        if (a.opt.count("out")) {
+            out = fs::u8path(a.get("out"));
+            if (count > 1) out.replace_filename(out.stem().string() + "_" + std::to_string(i + 1) + out.extension().string());
+        } else {
+            out = "imagem_" + std::to_string(img.seed) + ".png";
+        }
+        save_png(img, out);
+        std::cout << "\r" << img.width << "x" << img.height << ", " << img.steps << " passos, seed " << img.seed
+                  << ", " << std::setprecision(1) << img.seconds << " s -> " << fs::absolute(out).string() << "\n";
+    }
+    return 0;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) try {
@@ -243,6 +290,7 @@ int main(int argc, char** argv) try {
     if (cmd == "list") return cmd_list(mm);
     if (cmd == "remove") return cmd_remove(mm, a);
     if (cmd == "chat") return cmd_chat(mm, a);
+    if (cmd == "image") return cmd_image(mm, a);
     usage();
     return 2;
 } catch (const Cancelled&) {

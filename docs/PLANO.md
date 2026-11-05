@@ -55,10 +55,16 @@ consumo baixo de energia.
 4. Empacotamento MSIX.
 5. **(Depois)** Conversão de modelos do HF no download — ver seção abaixo.
 
-## Core (passo 2 do roadmap) — em andamento
+## Core (passo 2 do roadmap) — concluído
 
-Feito em 2026-11-04: `HubClient`, `ModelManager` e `TextEngine` em `core/`, mais a CLI
-`hfstudio.exe`. Ver `README.md`. Falta o `ImageEngine` (imagem na GPU).
+`HubClient`, `ModelManager`, `TextEngine` e `ImageEngine` em `core/`, mais a CLI
+`hfstudio.exe`. Ver `README.md`.
+
+**Cenário dos sonhos validado:** texto na NPU (16,5 tok/s) e imagem na GPU (1,5 s por imagem
+512² com LCM) rodando ao mesmo tempo. Sozinhos: 22,5 tok/s e 0,8 s — a perda vem da RAM
+compartilhada, mas os dois seguem usáveis em paralelo.
+
+Próximo: passo 3 — UI WinUI 3 (requer Developer Mode ligado).
 
 ## Ideia futura: converter qualquer modelo do HF no download
 

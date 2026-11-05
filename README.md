@@ -24,6 +24,9 @@ NPU / GPU Intel via OpenVINO GenAI. Plano e decisões em [docs/PLANO.md](docs/PL
 - `text_engine.hpp` — chat multi-turno com `LLMPipeline` + `ChatHistory`; streaming com
   interrupção; cache de compilação por dispositivo (`<modelo>/.ov_cache/<device>`); descarta as
   trocas mais antigas quando o histórico passa do limite de contexto.
+- `image_engine.hpp` — texto→imagem com `Text2ImagePipeline` (GPU por padrão); progresso por
+  passo com cancelamento; seed aleatória reportada (ou fixa, para repetir); passos padrão por
+  modelo (4 para LCM/turbo/schnell, 25 para os demais); `save_png` via WIC (nativo do Windows).
 
 Todas as operações longas aceitam callback de progresso/cancelamento — a UI vai rodá-las em
 threads de fundo.
@@ -39,7 +42,12 @@ hfstudio.bat download OpenVINO/Phi-3.5-mini-instruct-int4-cw-ov
 hfstudio.bat list
 hfstudio.bat chat OpenVINO/Phi-3.5-mini-instruct-int4-cw-ov --device NPU
 hfstudio.bat remove OpenVINO/Phi-3.5-mini-instruct-int4-cw-ov
+hfstudio.bat download OpenVINO/LCM_Dreamshaper_v7-int8-ov
+hfstudio.bat image OpenVINO/LCM_Dreamshaper_v7-int8-ov "a cozy cabin in the snow" --out out\cabana.png
 ```
+
+`image` aceita `--size 768x512`, `--steps`, `--seed`, `--guidance`, `--negative`, `--count`.
+Sem `--out`, salva `imagem_<seed>.png` na pasta atual.
 
 No chat: `/reset`, `/stats`, `/sair`; Ctrl+C interrompe a resposta. Em download, Ctrl+C pausa e
 o mesmo comando continua de onde parou. Modelos restritos: defina `HF_TOKEN`.
@@ -49,10 +57,23 @@ o mesmo comando continua de onde parou. Modelos restritos: defina `HF_TOKEN`.
 - Busca, download, retomada no meio de um arquivo de 600 MB, verificação SHA-256, remoção.
 - Detecção NPU: Phi-3.5-mini `int4-cw` → sim; LFM2.5 `int4-gq` (group_size=128) → não.
 - Chat multi-turno: NPU ~23 tok/s, GPU ~31 tok/s; corte de histórico com contexto pequeno.
+- Imagem (LCM Dreamshaper v7 int8, 512×512, 4 passos, GPU): carga 23 s na 1ª vez / 1,6 s com
+  cache; **0,8 s por imagem** depois da primeira.
+
+### Texto na NPU + imagem na GPU ao mesmo tempo ✅
+
+Dois processos: chat de 400 tokens na NPU enquanto a GPU gerava 15 imagens.
+
+| | Sozinho | Simultâneo |
+|---|---|---|
+| Texto (NPU, Phi-3.5-mini) | 22,5 tok/s | 16,5 tok/s (−27%) |
+| Imagem (GPU, LCM 512²) | 0,8 s/img | 1,5 s/img |
+
+Funciona sem erros e as imagens saem corretas. A queda vem da memória compartilhada (NPU e
+GPU usam a mesma RAM): ambos continuam bem usáveis, mas não é "de graça".
 
 ## Pendências conhecidas
 
-- **ImageEngine** (`Text2ImagePipeline` na GPU) — próximo passo.
 - Mudar `--ctx`/`--max-new` na NPU recompila o modelo (~1 min) na primeira vez para cada combinação.
 - Phi-3.5-mini responde mal em português; testar modelos melhores (ex.: Qwen3 `int4-cw`).
 - Busca não indica tamanho do modelo (exige uma chamada extra por resultado).
