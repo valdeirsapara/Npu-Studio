@@ -1,12 +1,13 @@
-# HF Studio
+# NPU Studio
 
-App nativo Windows (C++) para baixar modelos do Hugging Face e rodá-los localmente na
-NPU / GPU Intel via OpenVINO GenAI. Plano e decisões em [docs/PLANO.md](docs/PLANO.md).
+App nativo Windows (C++ / WinUI 3) para baixar modelos do Hugging Face e rodá-los localmente
+na NPU / GPU Intel via OpenVINO GenAI. Plano e decisões em [docs/PLANO.md](docs/PLANO.md).
 
 ## Estrutura
 
 | Pasta | O que é |
 |---|---|
+| `app/` | **NPU Studio** — app WinUI 3 em C++/WinRT (Chat, Imagem, Modelos) |
 | `core/` | Biblioteca C++ (`hfstudio_core`) — a lógica do app, sem interface |
 | `cli/` | `hfstudio.exe`, front-end de terminal para testar o core |
 | `spike/` | Protótipo inicial (mantido como referência; build próprio) |
@@ -31,7 +32,33 @@ NPU / GPU Intel via OpenVINO GenAI. Plano e decisões em [docs/PLANO.md](docs/PL
 Todas as operações longas aceitam callback de progresso/cancelamento — a UI vai rodá-las em
 threads de fundo.
 
-## Build e uso
+## App (WinUI 3)
+
+```bat
+build_app.bat
+build\app\Release\NpuStudio.exe
+```
+
+`build_app.bat` baixa o `nuget.exe` (se faltar), restaura os pacotes do Windows App SDK
+2.6 em `app\packages`, compila o core (CMake) e o app (MSBuild). O app é **não empacotado e
+self-contained**: o `.exe` roda direto, sem instalar o Windows App Runtime, e as DLLs do
+OpenVINO são copiadas para a pasta do `.exe`. Só existe a configuração **Release|x64**
+(o OpenVINO só distribui bibliotecas Release).
+
+Telas:
+
+- **Chat** — escolhe modelo e dispositivo (NPU para modelos compatíveis, senão GPU), carrega,
+  conversa com streaming; Enter envia, Shift+Enter quebra linha; botão Parar; "Nova conversa";
+  esconde blocos `<think>` (Qwen3); rodapé com tok/s, 1º token e uso de contexto.
+- **Imagem** — modelo, dispositivo, prompt, prompt negativo, tamanho, passos, seed; progresso
+  por passo e Cancelar; salva PNG em `Imagens\NPU Studio`; histórico de miniaturas da sessão.
+- **Modelos** — Explorar (busca no HF, selo NPU, download com progresso, Pausar/Continuar) e
+  Instalados (tamanho, quantização, Remover).
+
+Barra de título própria (`TitleBar`) com o botão de menu ao lado do ícone e os dispositivos
+detectados; fundo Mica.
+
+## CLI e core
 
 Requisitos: VS 2026 (C++), OpenVINO GenAI em `C:\Intel\openvino_genai`.
 
@@ -73,6 +100,11 @@ Funciona sem erros e as imagens saem corretas. A queda vem da memória compartil
 GPU usam a mesma RAM): ambos continuam bem usáveis, mas não é "de graça".
 
 ## Pendências conhecidas
+
+- Chat não renderiza Markdown (negrito, listas, código aparecem como texto puro).
+- Conversas não são salvas ao fechar o app.
+- Sem tela de configurações (pasta dos modelos, token do HF, tamanho do contexto).
+- Empacotamento MSIX (passo 4 do roadmap).
 
 - Mudar `--ctx`/`--max-new` na NPU recompila o modelo (~1 min) na primeira vez para cada combinação.
 - Phi-3.5-mini responde mal em português; testar modelos melhores (ex.: Qwen3 `int4-cw`).

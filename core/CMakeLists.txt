@@ -4,6 +4,7 @@ add_library(hfstudio_core STATIC
     src/model_manager.cpp
     src/text_engine.cpp
     src/image_engine.cpp
+    src/devices.cpp
 )
 target_include_directories(hfstudio_core
     PUBLIC include

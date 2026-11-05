@@ -64,7 +64,14 @@ consumo baixo de energia.
 512² com LCM) rodando ao mesmo tempo. Sozinhos: 22,5 tok/s e 0,8 s — a perda vem da RAM
 compartilhada, mas os dois seguem usáveis em paralelo.
 
-Próximo: passo 3 — UI WinUI 3 (requer Developer Mode ligado).
+## UI WinUI 3 (passo 3 do roadmap) — primeira versão funcionando
+
+App `NpuStudio` em `app/` (C++/WinRT, Windows App SDK 2.6.5, não empacotado e self-contained).
+Telas Chat, Imagem e Modelos usando o core. Testado pela interface: download do
+Qwen3-0.6B (434 MB em 36 s), chat na NPU (Phi-3.5, 23 tok/s) e na GPU (Qwen3-0.6B, 89 tok/s),
+imagem na GPU (LCM, 0,9 s). Pendências no `README.md`.
+
+Próximo: polimento (Markdown no chat, salvar conversas, configurações) e depois passo 4 — MSIX.
 
 ## Ideia futura: converter qualquer modelo do HF no download
 

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="NpuStudio.ChatPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    NavigationCacheMode="Required">
+
+    <Grid Padding="32,12,32,20" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar: model + device + load -->
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Chat" Style="{StaticResource TitleTextBlockStyle}" VerticalAlignment="Center" Margin="0,0,12,0" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <ComboBox x:Name="ModelCombo" PlaceholderText="Escolha um modelo de texto" MinWidth="320"
+                          SelectionChanged="Selection_Changed" />
+                <ComboBox x:Name="DeviceCombo" MinWidth="110" SelectionChanged="Selection_Changed" />
+                <Button x:Name="LoadButton" Content="Carregar" Click="Load_Click" Style="{StaticResource AccentButtonStyle}" />
+                <ProgressRing x:Name="LoadRing" IsActive="False" Width="20" Height="20" />
+            </StackPanel>
+            <Button x:Name="NewChatButton" AutomationProperties.Name="Nova conversa" Grid.Column="2" Click="NewChat_Click" IsEnabled="False">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE710;" FontSize="14" />
+                    <TextBlock Text="Nova conversa" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <StackPanel Grid.Row="1" Spacing="8">
+            <TextBlock x:Name="LoadStatus" Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <InfoBar x:Name="ErrorBar" Severity="Error" IsOpen="False" Title="Erro" />
+        </StackPanel>
+
+        <!-- Messages -->
+        <Grid Grid.Row="2">
+            <ScrollViewer x:Name="MessagesScroll" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="MessagesPanel" Spacing="12" Padding="0,8,16,8" />
+            </ScrollViewer>
+            <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+                <FontIcon Glyph="&#xE8BD;" FontSize="40" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                <TextBlock x:Name="EmptyText" Text="Escolha um modelo e clique em Carregar."
+                           Style="{StaticResource BodyTextBlockStyle}" HorizontalAlignment="Center"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Input -->
+        <Grid Grid.Row="3" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="PromptBox" PlaceholderText="Escreva uma mensagem  (Enter envia, Shift+Enter quebra linha)"
+                     AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="160" IsEnabled="False"
+                     PreviewKeyDown="PromptBox_PreviewKeyDown" />
+            <Button x:Name="SendButton" AutomationProperties.Name="Enviar" Grid.Column="1" Style="{StaticResource AccentButtonStyle}" Click="Send_Click"
+                    IsEnabled="False" VerticalAlignment="Bottom" Height="32" ToolTipService.ToolTip="Enviar">
+                <FontIcon Glyph="&#xE724;" FontSize="14" />
+            </Button>
+            <Button x:Name="StopButton" AutomationProperties.Name="Parar" Grid.Column="1" Click="Stop_Click" Visibility="Collapsed"
+                    VerticalAlignment="Bottom" Height="32" ToolTipService.ToolTip="Parar">
+                <FontIcon Glyph="&#xE71A;" FontSize="14" />
+            </Button>
+        </Grid>
+
+        <TextBlock x:Name="StatsText" Grid.Row="4" Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+    </Grid>
+</Page>

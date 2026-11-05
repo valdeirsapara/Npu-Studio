@@ -31,9 +31,10 @@ size_t guess_default_steps(const fs::path& dir) {
     return 25;
 }
 
+// 32-bit so it is easy to read, type back and store exactly in a UI number box (double).
 uint64_t random_seed() {
     std::random_device rd;
-    uint64_t s = ((uint64_t)rd() << 32) ^ rd();
+    uint64_t s = rd();
     return s ? s : 1;
 }
 

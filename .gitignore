@@ -1,4 +1,8 @@
 build/
+app/packages/
+app/Generated Files/
+tools/nuget.exe
+*.user
 models/
 out/
 *.part

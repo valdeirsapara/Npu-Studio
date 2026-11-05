@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="NpuStudio.ModelsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    NavigationCacheMode="Required">
+
+    <Grid Padding="32,12,32,24" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Modelos" Style="{StaticResource TitleTextBlockStyle}" />
+
+        <SelectorBar x:Name="Tabs" Grid.Row="1" SelectionChanged="Tabs_SelectionChanged">
+            <SelectorBarItem x:Name="ExploreTab" Text="Explorar" IsSelected="True" />
+            <SelectorBarItem x:Name="InstalledTab" Text="Instalados" />
+        </SelectorBar>
+
+        <!-- Explore: search bar -->
+        <Grid x:Name="SearchBar" Grid.Row="2" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="SearchBox" PlaceholderText="Buscar modelos OpenVINO no Hugging Face (ex.: qwen3, phi, flux)"
+                     KeyDown="SearchBox_KeyDown" />
+            <CheckBox x:Name="OfficialOnly" Grid.Column="1" Content="Só da org OpenVINO" IsChecked="True" />
+            <Button x:Name="SearchButton" AutomationProperties.Name="Buscar" Grid.Column="2" Style="{StaticResource AccentButtonStyle}" Click="Search_Click">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE721;" FontSize="14" />
+                    <TextBlock Text="Buscar" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Installed: summary line -->
+        <TextBlock x:Name="InstalledSummary" Grid.Row="2" Visibility="Collapsed"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+
+        <Grid Grid.Row="3">
+            <ScrollViewer x:Name="ExploreScroll">
+                <StackPanel x:Name="ResultsPanel" Spacing="8" Padding="0,0,16,0" />
+            </ScrollViewer>
+            <ScrollViewer x:Name="InstalledScroll" Visibility="Collapsed">
+                <StackPanel x:Name="InstalledPanel" Spacing="8" Padding="0,0,16,0" />
+            </ScrollViewer>
+            <ProgressRing x:Name="SearchRing" IsActive="False" Width="40" Height="40" />
+        </Grid>
+    </Grid>
+</Page>

@@ -1,0 +1,8 @@
+namespace NpuStudio
+{
+    [default_interface]
+    runtimeclass ImagePage : Microsoft.UI.Xaml.Controls.Page
+    {
+        ImagePage();
+    }
+}

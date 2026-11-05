@@ -1,0 +1,8 @@
+namespace NpuStudio
+{
+    [default_interface]
+    runtimeclass ModelsPage : Microsoft.UI.Xaml.Controls.Page
+    {
+        ModelsPage();
+    }
+}
