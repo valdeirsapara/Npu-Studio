@@ -1,0 +1,4 @@
+build/
+models/
+*.part
+.ov_cache/
